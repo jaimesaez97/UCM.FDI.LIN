@@ -1,0 +1,70 @@
+PASOS  PARA COMPILAR LLAMADA AL SISTEMA Y KERNEL PARA PRÁCTICA 2 Y 3
+Una vez se tengan los archvios syscall.c y ledctl_syscall.c correctos 
+(estos son los que pertenecen a la llamada al sistema, no al programa
+de usuario que los invoca) hay que seguir una serie de pasos para 
+compilar debidamente.
+
+	1)  Descargar las fuentes del kernel linux-kernel-4.9.11 (FUENTES).
+	2)  Copiar los archivos syscall.c y ledctl_syscall.c en FUENTES/kernel.
+	3)  Modificar el Makefile existente en FUENTES/KERNEL añadiendo las
+	    llamadas que hemos creado :
+
+		 obj-y   = fork.o exec_domain.o panic.o \
+		 cpu.o exit.o softirq.o resource.o \
+		 sysctl.o sysctl_binary.o capability.o ptrace.o user.o \
+		 signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+		 extable.o params.o \
+		 kthread.o sys_ni.o nsproxy.o \
+		 notifier.o ksysfs.o cred.o reboot.o \
+		 async.o range.o smpboot.o ucount.o
+		 syscall.o ledctl_syscal.o
+
+	4)  Modificar la TABLA DE LLAMADAS AL SISTEMA ubicada en 
+	    arch/x86/entry/syscalls/syscall_64.tbl añadiendo un símbolo
+	    de llamada para cada una de las que hemos creado:
+	     ...
+		 331   	common	pkey_free 		sys_pkey_free
+		 332		common	lin_hello 		sys_lin_hello
+		 333		common	ledctl 			sys_ledctl
+
+		*los numeros 332 y 333 los he escogido yo de entre los libres
+		 (hay que poner los mismos en la syscall)
+
+	5)  Ahora toca COMPILAR EL KERNEL, por lo qu vamos a descargar 
+	    el archivo de configuración de las fuentes del kernel
+	    (config-4.9.111-mikernel).
+
+	6)  Copiamos el archivo de configuracion al .config
+		$ cp config-4.9.111-mikernel .config
+
+	7)  Hacemos make oldconfig para que se guarde
+		$ make oldconfig
+
+	8)  Compilamos el KERNEL (ADVERTENCIA: HACER EN LABORATORIO O
+	    EN ORDENADOR CON >= 8 NUCLEOS -> 15MIN )
+	   	CONSEJO: COMPILAR PRIMERO CON 1 NUCLEO SIN CONCURRENCIA
+	   	PARA QUE SI HAYA UN FALLO SALGA EN LOS PRIMEROS SEGUNDOS 
+	   	Y NO AL FINAL ($ make -j1 bindeb_pkg LOCALVERSION=-mikernel)
+		$ make -j8 bindeb_pkg LOCALVERSION=-mikernel
+
+	9)  Esperamos 15 minutos y si no hay fallos se generan los paquetes
+	   headers e image. Los copiamos a la maquina virtual con ssh. 
+	   	-Mirar direccion ip en la maquina virtual ($ ip a <- 2º parrafo).
+	   	-Copiar paquetes:
+	   		$ scp linux-headers-4.9.111-mikernel_4.9.111-mikernel-1_amd64.deb \
+	   		  linux-image-4.9.111-mikernel_4.9.111-mikernel-1_amd64.deb  \
+	   		  kernel@192.168.201.128:/home/kernel
+
+	10) Instalar paquetes en la MV
+		$ sudo dpkg -i linux-headers-4.9.111-mikernel_4.9.111-mikernel-1_amd64.deb \
+			linux-image-4.9.111-mikernel_4.9.111-mikernel-1_amd64.deb
+
+	11) Reiniciar MV
+		$ sudo reboot
+
+	12) En el GRUB escoger Opciones Avanzadas de GNU/Linux y seleccionar mikernel.
+
+	13) Ahora arrancando el programa de usuario deberían funcionar ambas prácticas.
+
+
+
